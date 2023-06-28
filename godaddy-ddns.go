@@ -13,6 +13,8 @@ import (
 	"os"
 	"os/signal"
 	"time"
+	"strings"
+	"net"
 
 	"github.com/jedib0t/go-pretty/v6/table"
 )
@@ -472,7 +474,34 @@ func getPubIP() (string, error) {
 	var ipbody GetIPBody
 	var response *http.Response
 
-	response, err := http.Get("https://api.ipify.org/?format=json")
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", "https://ip.run", nil)
+	req.Header.Set("User-Agent", ": curl/7.68.0")
+
+	response, err := client.Do(req)
+	if err == nil {
+		defer response.Body.Close()
+		bodyBytes, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			// fmt.Println(err.Error())
+			return "", err
+		}
+		resp_str := string(bodyBytes)
+		for _, word := range strings.Split(resp_str, " ") {
+			//fmt.Println(word)
+			// try to parse the word as an IP address
+			ip := net.ParseIP(word)
+			// if the word is a valid IP address
+			if ip != nil {
+				// print the IP address
+				//ipbody.IP = ip.String()
+				return ip.String(), nil
+			}
+		}
+
+	} 
+
+	response, err = http.Get("https://api.ipify.org/?format=json")
 	if err != nil {
 		response, err = http.Get("https://ipinfo.io/json")
 		if err != nil {
